@@ -1,35 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import './App.css';
 
-// Units
+// Units and grouped items
 const UNITS = ["case", "sheets", "heads", "lbs", "qts", "packs", "dozen", "G", "st", "container"];
-
-// Item order
 const GROUPED_ITEMS = [
-  "TEST",
-  "GF Buns",
-  "Buns",
-  "Biscuits",
-  "Hot Dogs",
-  "Hot Dog Buns",
-  "Racer",
-  "Veggie patties",
-  "Tomatoes",
-  "Lettuce",
-  "Red Onion",
-  "Yellow Onion",
-  "Peppers",
-  "Whole Eggs",
-  "Avos",
-  "Cilantro",
-  "Limes",
-  "Plantain",
-  "Crm Chz",
-  "Sour cream",
-  "Unsalted Butter",
-  "Jalps"
+  "TEST", "GF Buns", "Buns", "Biscuits", "Hot Dogs", "Hot Dog Buns",
+  "Racer", "Veggie patties", "Tomatoes", "Lettuce", "Red Onion", "Yellow Onion",
+  "Peppers", "Whole Eggs", "Avos", "Cilantro", "Limes", "Plantain",
+  "Crm Chz", "Sour cream", "Unsalted Butter", "Jalps"
 ];
 
-// Build blank inventory safely
 const buildBlankInventory = () => ({
   FoodTruck: GROUPED_ITEMS.reduce((acc, item) => { acc[item] = { logs: [], undone: [] }; return acc; }, {}),
   CR: GROUPED_ITEMS.reduce((acc, item) => { acc[item] = { logs: [], undone: [] }; return acc; }, {})
@@ -37,45 +17,7 @@ const buildBlankInventory = () => ({
 
 export default function App() {
   const [tab, setTab] = useState("FoodTruck");
-
-  // Always start safe
-  const [inventoryData, setInventoryData] = useState(buildBlankInventory);
-  const [loaded, setLoaded] = useState(false);
-
-  // Safe load AFTER mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("inventoryData");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-
-        // Ensure all keys exist (prevents blank grid if items changed)
-        const safe = buildBlankInventory();
-        Object.keys(parsed || {}).forEach(tabKey => {
-          Object.keys(parsed[tabKey] || {}).forEach(item => {
-            if (safe[tabKey] && safe[tabKey][item]) {
-              safe[tabKey][item] = parsed[tabKey][item];
-            }
-          });
-        });
-
-        setInventoryData(safe);
-      }
-    } catch (e) {
-      console.warn("Storage load failed, using blank inventory");
-    }
-
-    setLoaded(true);
-  }, []);
-
-  // Save only AFTER load completed
-  useEffect(() => {
-    if (!loaded) return;
-    try {
-      localStorage.setItem("inventoryData", JSON.stringify(inventoryData));
-    } catch (e) {}
-  }, [inventoryData, loaded]);
-
+  const [inventoryData, setInventoryData] = useState(buildBlankInventory());
   const [modalItem, setModalItem] = useState(null);
   const [confirmModal, setConfirmModal] = useState(false);
   const [inputQty, setInputQty] = useState("");
@@ -83,7 +25,7 @@ export default function App() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [doneOutput, setDoneOutput] = useState("");
 
-  // Double tap logic
+  // Double-tap logic
   const handleGridTap = (item) => {
     if (selectedItem === item) {
       setConfirmModal(true);
@@ -100,17 +42,13 @@ export default function App() {
   const handleSave = () => {
     const qty = parseFloat(inputQty);
     if (isNaN(qty)) return;
-
     const tabInventory = inventoryData[tab];
     const item = tabInventory[modalItem];
-
     const newLogs = [...item.logs, { qty, unit: inputUnit }];
-
     setInventoryData({
       ...inventoryData,
       [tab]: { ...tabInventory, [modalItem]: { logs: newLogs, undone: [] } }
     });
-
     setModalItem(null);
     setConfirmModal(false);
     setInputQty("");
@@ -120,16 +58,11 @@ export default function App() {
     if (!modalItem) return;
     const item = inventoryData[tab][modalItem];
     if (!item.logs.length) return;
-
     const newLogs = [...item.logs];
     const undoneEntry = newLogs.pop();
-
     setInventoryData({
       ...inventoryData,
-      [tab]: {
-        ...inventoryData[tab],
-        [modalItem]: { logs: newLogs, undone: [...item.undone, undoneEntry] }
-      }
+      [tab]: { ...inventoryData[tab], [modalItem]: { logs: newLogs, undone: [...item.undone, undoneEntry] } }
     });
   };
 
@@ -137,16 +70,11 @@ export default function App() {
     if (!modalItem) return;
     const item = inventoryData[tab][modalItem];
     if (!item.undone.length) return;
-
     const newUndone = [...item.undone];
     const redoEntry = newUndone.pop();
-
     setInventoryData({
       ...inventoryData,
-      [tab]: {
-        ...inventoryData[tab],
-        [modalItem]: { logs: [...item.logs, redoEntry], undone: newUndone }
-      }
+      [tab]: { ...inventoryData[tab], [modalItem]: { logs: [...item.logs, redoEntry], undone: newUndone } }
     });
   };
 
@@ -159,9 +87,7 @@ export default function App() {
   const generateOutput = () => {
     const today = new Date().toLocaleDateString();
     let output = `Inventory ${today}\n\nUS Foods:\n`;
-
     const combined = {};
-
     Object.values(inventoryData).forEach(tabData => {
       Object.entries(tabData).forEach(([name, val]) => {
         val.logs.forEach(log => {
@@ -170,16 +96,12 @@ export default function App() {
         });
       });
     });
-
     GROUPED_ITEMS.forEach(item => {
       if (combined[item]) {
-        const unitsStr = Object.entries(combined[item])
-          .map(([u, q]) => `${q} ${u}`)
-          .join(" + ");
+        const unitsStr = Object.entries(combined[item]).map(([u, q]) => `${q} ${u}`).join(" + ");
         output += `${item}:  ${unitsStr}\n`;
       }
     });
-
     return output;
   };
 
@@ -188,35 +110,15 @@ export default function App() {
     alert("Done! Output ready.");
   };
 
-  const fallbackCopy = () => {
-    const textArea = document.createElement("textarea");
-    textArea.value = doneOutput;
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand("copy");
-    document.body.removeChild(textArea);
-    alert("Copied!");
-  };
-
   const copyToClipboard = () => {
     if (!doneOutput) return;
-
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(doneOutput).then(() => alert("Copied!"));
-    } else {
-      fallbackCopy();
-    }
+    navigator.clipboard.writeText(doneOutput).then(() => alert("Copied!"));
   };
 
   const currentInventory = inventoryData[tab];
 
-  if (!loaded) {
-    return <div style={{ padding: 40 }}>Loading inventory...</div>;
-  }
-
   return (
     <div style={{ fontFamily: "sans-serif", paddingBottom: 70 }}>
-
       {/* Top Bar */}
       <div style={{ position: "sticky", top: 0, background: "#fff", padding: 10, borderBottom: "1px solid #ccc", display: "flex", justifyContent: "space-between", zIndex: 50 }}>
         <h2>{tab} Inventory</h2>
@@ -226,14 +128,12 @@ export default function App() {
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Inventory Grid */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(120px,1fr))", gap: 10, padding: 10 }}>
         {GROUPED_ITEMS.map(item => {
           const logs = currentInventory[item].logs;
-          const display = Object.entries(
-            logs.reduce((m, l) => { m[l.unit] = (m[l.unit] || 0) + l.qty; return m; }, {})
-          ).map(([u, q]) => `${q} ${u}`).join(" + ");
-
+          const display = Object.entries(logs.reduce((m, l) => { m[l.unit] = (m[l.unit] || 0) + l.qty; return m; }, {}))
+            .map(([u, q]) => `${q} ${u}`).join(" + ");
           return (
             <div
               key={item}
@@ -253,10 +153,10 @@ export default function App() {
         })}
       </div>
 
-      {/* Modal */}
+      {/* Modal with history logs */}
       {confirmModal && modalItem && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <div style={{ background: "#fff", padding: 20, borderRadius: 10, width: 300 }}>
+          <div style={{ background: "#fff", padding: 20, borderRadius: 10, width: 300, maxHeight: "80vh", overflowY: "auto" }}>
             <h3>Edit {modalItem}</h3>
 
             <input
@@ -273,6 +173,18 @@ export default function App() {
               {UNITS.map(u => <option key={u}>{u}</option>)}
             </select>
 
+            {/* CHANGE: History / logs display */}
+            {currentInventory[modalItem].logs.length > 0 && (
+              <div style={{ fontSize: 12, maxHeight: 120, overflowY: "auto", marginBottom: 10 }}>
+                <strong>History:</strong>
+                <ul>
+                  {currentInventory[modalItem].logs.map((log, idx) => (
+                    <li key={idx}>{log.qty} {log.unit}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <button onClick={() => { setConfirmModal(false); setModalItem(null); }}>Cancel</button>
               <div>
@@ -285,7 +197,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Output */}
+      {/* Output only after Done */}
       {doneOutput && (
         <div style={{ padding: 10 }}>
           <pre style={{ background: "#f4f4f4", padding: 10 }}>{doneOutput}</pre>
@@ -298,7 +210,6 @@ export default function App() {
         <button style={{ flex: 1, padding: 12, fontWeight: tab === "FoodTruck" ? "bold" : "normal" }} onClick={() => setTab("FoodTruck")}>Food Truck</button>
         <button style={{ flex: 1, padding: 12, fontWeight: tab === "CR" ? "bold" : "normal" }} onClick={() => setTab("CR")}>CR</button>
       </div>
-
     </div>
   );
 }
