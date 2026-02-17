@@ -1,54 +1,97 @@
-import { useState } from "react";
-import './App.css';
+import React, { useState, useRef } from "react";
+import "./App.css";
 
-// Units and grouped items
 const UNITS = ["case", "sheets", "heads", "lbs", "qts", "packs", "dozen", "G", "st", "container"];
-const GROUPED_ITEMS = [
-  "TEST", "GF Buns", "Buns", "Biscuits", "Hot Dogs", "Hot Dog Buns",
-  "Racer", "Veggie patties", "Tomatoes", "Lettuce", "Red Onion", "Yellow Onion",
-  "Peppers", "Whole Eggs", "Avos", "Cilantro", "Limes", "Plantain",
-  "Crm Chz", "Sour cream", "Unsalted Butter", "Jalps"
+
+const INVENTORY_GROUPS = [
+  {
+    title: "Meat & Breads",
+    items: [
+      { name: "Chorizo" },
+      { name: "Hot Dogs" },
+      { name: "Chx Sausage" },
+      { name: "GF Buns" },
+      { name: "Buns" },
+      { name: "Hot Dog Buns" },
+      { name: "Biscuits" },
+      { name: "Racer" },
+      { name: "Veggie patties" }
+    ]
+  },
+  {
+    title: "Produce",
+    items: [
+      { name: "Tomatoes" },
+      { name: "Lettuce" },
+      { name: "Red Onion" },
+      { name: "Yellow Onion" },
+      { name: "Peppers" },
+      { name: "Whole Eggs" },
+      { name: "Avos" },
+      { name: "Cilantro" },
+      { name: "Limes" },
+      { name: "Plantain" }
+    ]
+  },
+  {
+    title: "Dairy & Misc",
+    items: [
+      { name: "Crm Chz" },
+      { name: "Sour cream" },
+      { name: "Unsalted Butter" },
+      { name: "Jalps" }
+    ]
+  }
 ];
 
-const buildBlankInventory = () => ({
-  FoodTruck: GROUPED_ITEMS.reduce((acc, item) => { acc[item] = { logs: [], undone: [] }; return acc; }, {}),
-  CR: GROUPED_ITEMS.reduce((acc, item) => { acc[item] = { logs: [], undone: [] }; return acc; }, {})
-});
+const buildBlankInventory = () => {
+  const tabs = ["FoodTruck", "CR"];
+  const inventory = {};
+  tabs.forEach(tab => {
+    inventory[tab] = {};
+    INVENTORY_GROUPS.forEach(group => {
+      group.items.forEach(item => {
+        inventory[tab][item.name] = { logs: [], undone: [] };
+      });
+    });
+  });
+  return inventory;
+};
 
 export default function App() {
+  
   const [tab, setTab] = useState("FoodTruck");
   const [inventoryData, setInventoryData] = useState(buildBlankInventory());
   const [modalItem, setModalItem] = useState(null);
   const [confirmModal, setConfirmModal] = useState(false);
   const [inputQty, setInputQty] = useState("");
   const [inputUnit, setInputUnit] = useState(UNITS[0]);
-  const [selectedItem, setSelectedItem] = useState(null);
   const [doneOutput, setDoneOutput] = useState("");
 
-  // Double-tap logic
+  const inventoryRef = useRef(null);
+  const currentInventory = inventoryData[tab];
+
+  // ---------- Single Tap Modal ----------
   const handleGridTap = (item) => {
-    if (selectedItem === item) {
-      setConfirmModal(true);
-      setModalItem(item);
-      setInputQty("");
-      setInputUnit(UNITS[0]);
-      setSelectedItem(null);
-    } else {
-      setSelectedItem(item);
-      setTimeout(() => setSelectedItem(null), 2000);
-    }
+    setModalItem(item);
+    setConfirmModal(true);
+    setInputQty("");
+    setInputUnit(UNITS[0]);
   };
 
   const handleSave = () => {
     const qty = parseFloat(inputQty);
     if (isNaN(qty)) return;
+
     const tabInventory = inventoryData[tab];
     const item = tabInventory[modalItem];
     const newLogs = [...item.logs, { qty, unit: inputUnit }];
+
     setInventoryData({
       ...inventoryData,
       [tab]: { ...tabInventory, [modalItem]: { logs: newLogs, undone: [] } }
     });
+
     setModalItem(null);
     setConfirmModal(false);
     setInputQty("");
@@ -62,7 +105,10 @@ export default function App() {
     const undoneEntry = newLogs.pop();
     setInventoryData({
       ...inventoryData,
-      [tab]: { ...inventoryData[tab], [modalItem]: { logs: newLogs, undone: [...item.undone, undoneEntry] } }
+      [tab]: {
+        ...inventoryData[tab],
+        [modalItem]: { logs: newLogs, undone: [...item.undone, undoneEntry] }
+      }
     });
   };
 
@@ -74,7 +120,10 @@ export default function App() {
     const redoEntry = newUndone.pop();
     setInventoryData({
       ...inventoryData,
-      [tab]: { ...inventoryData[tab], [modalItem]: { logs: [...item.logs, redoEntry], undone: newUndone } }
+      [tab]: {
+        ...inventoryData[tab],
+        [modalItem]: { logs: [...item.logs, redoEntry], undone: newUndone }
+      }
     });
   };
 
@@ -96,11 +145,15 @@ export default function App() {
         });
       });
     });
-    GROUPED_ITEMS.forEach(item => {
-      if (combined[item]) {
-        const unitsStr = Object.entries(combined[item]).map(([u, q]) => `${q} ${u}`).join(" + ");
-        output += `${item}:  ${unitsStr}\n`;
-      }
+    INVENTORY_GROUPS.forEach(group => {
+      group.items.forEach(item => {
+        if (combined[item.name]) {
+          const unitsStr = Object.entries(combined[item.name])
+            .map(([u,q])=>`${q} ${u}`)
+            .join(" + ");
+          output += `${item.name}:  ${unitsStr}\n`;
+        }
+      });
     });
     return output;
   };
@@ -112,103 +165,116 @@ export default function App() {
 
   const copyToClipboard = () => {
     if (!doneOutput) return;
-    navigator.clipboard.writeText(doneOutput).then(() => alert("Copied!"));
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(doneOutput).then(()=>alert("Copied!"));
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = doneOutput;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      alert("Copied!");
+    }
   };
 
-  const currentInventory = inventoryData[tab];
+  // ---------- Tab Change with scroll-to-top ----------
+const handleTabChange = (newTab) => {
+  setTab(newTab);
+
+  // Scroll the inventory container
+  if (inventoryRef.current) {
+    inventoryRef.current.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Scroll window to top (accounts for iPhone nav bar)
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
 
   return (
-    <div style={{ fontFamily: "sans-serif", paddingBottom: 70 }}>
+    <div className="app-container">
       {/* Top Bar */}
-      <div style={{ position: "sticky", top: 0, background: "#fff", padding: 10, borderBottom: "1px solid #ccc", display: "flex", justifyContent: "space-between", zIndex: 50 }}>
-        <h2>{tab} Inventory</h2>
-        <div>
-          <button onClick={handleDone} style={{ marginRight: 10 }}>Done</button>
-          <button onClick={clearAll} style={{ color: "red" }}>Clear All</button>
+      <div className="top-bar">
+        <img
+          className="logo"
+          src="https://images.squarespace-cdn.com/content/v1/62e97bd57cf7b479ef527b84/4e4b9191-5560-4514-bbd7-82206ecdbefd/CafeRacer-Lettering-WO-coffeedonuts_02.png?format=1500w"
+          alt="Logo"
+        />
+        <div className="top-bar-grid">
+          <button onClick={handleDone}>Done</button>
+          <button onClick={clearAll}>Clear All</button>
         </div>
       </div>
 
-      {/* Inventory Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(120px,1fr))", gap: 10, padding: 10 }}>
-        {GROUPED_ITEMS.map(item => {
-          const logs = currentInventory[item].logs;
-          const display = Object.entries(logs.reduce((m, l) => { m[l.unit] = (m[l.unit] || 0) + l.qty; return m; }, {}))
-            .map(([u, q]) => `${q} ${u}`).join(" + ");
-          return (
-            <div
-              key={item}
-              onClick={() => handleGridTap(item)}
-              style={{
-                border: "1px solid #ccc",
-                borderRadius: 8,
-                padding: 10,
-                textAlign: "center",
-                background: selectedItem === item ? "#b2ebf2" : "#f9f9f9"
-              }}
-            >
-              {item}
-              <div style={{ fontSize: 12 }}>{display}</div>
-            </div>
-          );
-        })}
+      {/* Inventory */}
+      <div className="tab-inventory" ref={inventoryRef}>
+        <h2 className="tab-title">{tab} Inventory</h2>
+        <div className="inventory-grid">
+          {INVENTORY_GROUPS.map(group => (
+            <React.Fragment key={group.title}>
+              <div className="section-title">{group.title}</div>
+              {group.items.map(item => {
+                const logs = currentInventory[item.name].logs;
+                const display = Object.entries(
+                  logs.reduce((m,l)=>{ m[l.unit]=(m[l.unit]||0)+l.qty; return m; }, {})
+                ).map(([u,q])=>`${q} ${u}`).join(" + ");
+
+                return (
+                  <div
+                    key={item.name}
+                    className="inventory-item"
+                    onClick={()=>handleGridTap(item.name)}
+                  >
+                    {item.name}
+                    {display && <div className="item-logs highlight-count">{display}</div>}
+                  </div>
+                );
+              })}
+            </React.Fragment>
+          ))}
+        </div>
       </div>
 
-      {/* Modal with history logs */}
+      {/* Modal */}
       {confirmModal && modalItem && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <div style={{ background: "#fff", padding: 20, borderRadius: 10, width: 300, maxHeight: "80vh", overflowY: "auto" }}>
+        <div className="modal-backdrop">
+          <div className="modal-content">
             <h3>Edit {modalItem}</h3>
-
             <input
-              type="number"
-              step="0.01"
-              inputMode="decimal"
-              pattern="[0-9]*"
-              value={inputQty}
-              onChange={(e) => setInputQty(e.target.value)}
-              style={{ width: "100%", fontSize: 16, marginBottom: 10 }}
-            />
-
-            <select value={inputUnit} onChange={(e) => setInputUnit(e.target.value)} style={{ width: "100%", fontSize: 16, marginBottom: 10 }}>
-              {UNITS.map(u => <option key={u}>{u}</option>)}
+  type="number"
+  inputMode="decimal"    // ensures numeric keyboard with decimal
+  pattern="[0-9]*"      // hints numeric input
+  step="0.01"
+  value={inputQty}
+  onChange={e => setInputQty(e.target.value)}
+  className="modal-input"
+/>
+            <select value={inputUnit} onChange={e=>setInputUnit(e.target.value)} className="modal-select">
+              {UNITS.map(u=><option key={u}>{u}</option>)}
             </select>
-
-            {/* CHANGE: History / logs display */}
-            {currentInventory[modalItem].logs.length > 0 && (
-              <div style={{ fontSize: 12, maxHeight: 120, overflowY: "auto", marginBottom: 10 }}>
-                <strong>History:</strong>
-                <ul>
-                  {currentInventory[modalItem].logs.map((log, idx) => (
-                    <li key={idx}>{log.qty} {log.unit}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <button onClick={() => { setConfirmModal(false); setModalItem(null); }}>Cancel</button>
-              <div>
-                <button onClick={handleUndo}>Undo</button>
-                <button onClick={handleRedo}>Redo</button>
-                <button onClick={handleSave}>Save</button>
-              </div>
+            <div className="modal-buttons">
+              <button onClick={()=>{setConfirmModal(false); setModalItem(null)}}>Cancel</button>
+              <button onClick={handleUndo}>Undo</button>
+              <button onClick={handleRedo}>Redo</button>
+              <button onClick={handleSave}>Save</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Output only after Done */}
+      {/* Output */}
       {doneOutput && (
-        <div style={{ padding: 10 }}>
-          <pre style={{ background: "#f4f4f4", padding: 10 }}>{doneOutput}</pre>
-          <button onClick={copyToClipboard}>Copy Output</button>
+        <div style={{padding:10}}>
+          <pre className="output-container">{doneOutput}</pre>
+          <button style={{marginTop:10, padding: "10px 15px", marginBottom:100}} onClick={copyToClipboard}>Copy Output</button>
         </div>
       )}
 
       {/* Bottom Tabs */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, display: "flex", borderTop: "1px solid #ccc", background: "#fff" }}>
-        <button style={{ flex: 1, padding: 12, fontWeight: tab === "FoodTruck" ? "bold" : "normal" }} onClick={() => setTab("FoodTruck")}>Food Truck</button>
-        <button style={{ flex: 1, padding: 12, fontWeight: tab === "CR" ? "bold" : "normal" }} onClick={() => setTab("CR")}>CR</button>
+      <div className="bottom-tabs">
+        <button className={tab==="FoodTruck"?"active":""} onClick={()=>handleTabChange("FoodTruck")}>Food Truck</button>
+        <button className={tab==="CR"?"active":""} onClick={()=>handleTabChange("CR")}>CR</button>
       </div>
     </div>
   );
