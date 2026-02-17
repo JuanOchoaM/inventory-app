@@ -1,6 +1,7 @@
 {
   "name": "inventory-app",
   "private": true,
+  "homepage": "https://juanochoam.github.io/inventory-app",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
