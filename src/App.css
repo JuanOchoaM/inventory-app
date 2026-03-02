@@ -84,11 +84,24 @@ body, html, #root {
 
 .tab-title {
   font-family: 'Modak', cursive;
-  color: #ff6b00;
+  color: var(--dusk-blue);
   font-size: 24px;
-  margin: 0 0 10px 0;
+  margin: 0px -130px 10px 0;
   text-align: center;
+    grid-column: 1 / -1;
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 5px;
+  font-family: 'Modak', cursive;
+  line-height: 1.2;
 }
+@media only screen and (max-width: 768px) {
+    /* Target the specific header element(s) */
+    .tab-title {
+        display: none !important; /* !important helps override existing styles */
+    }
+}
+
 
 /* ===== Inventory Grid & Items ===== */
 .inventory-grid {
@@ -172,8 +185,8 @@ body, html, #root {
 
 .modal-input,
 .modal-select-qty {
-  width: 25%;
-  height: 55px;
+  width: 80px;
+  height: 40px;
   font-size: 18px;
   padding: 8px;
   margin-bottom: 12px;
@@ -288,4 +301,9 @@ body, html, #root {
 
 .calculator-view {
   padding: 20px;
+}
+
+.recipe-details {
+  margin-top: 15px;
+  background-color: var(--secondary-bg);
 }
