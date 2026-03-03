@@ -10,17 +10,17 @@ body, html, #root {
 
 /* ===== Color Palette ===== */
 :root {
-  --pumpkin-spice: #F57523;
-  --dry-sage: #D0CAA9;
+  --pumpkin-spice: #F57611;
+  --dry-sage: #fecb38;
   --autumn-ember: #B55D1C;
-  --dusk-blue: #41546D;
+  --dusk-blue: #28283a;
   --blue-slate: #4F6078;
 
-  --main-bg: #ffc844;
+  --main-bg: #ffab02;
   --highlight: #ff6b00;
-  --secondary-bg: #fff8e1;
-  --accent-btn: #e55a00;
-  --cancel-btn: #f44336;
+  --secondary-bg: #f2ecd8;
+  --accent-btn: #fecb38;
+  --cancel-btn: #151211;
   --cancel-hover: #d32f2f;
   --divider-line: rgba(0,0,0,0.2);
 }
@@ -76,31 +76,28 @@ body, html, #root {
   padding-bottom: calc(70px + env(safe-area-inset-bottom, 0)); /* space for bottom tabs */
   box-sizing: border-box;
   display: flex;
-  background-color: var(--main-bg);
   flex-direction: column;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch; /* smooth scrolling on iPhone */
+  background-color: #fecb38 !important;
+  color: var(--dusk-blue) !important;
 }
 
 .tab-title {
   font-family: 'Modak', cursive;
   color: var(--dusk-blue);
   font-size: 24px;
-  margin: 0px -130px 10px 0;
   text-align: center;
     grid-column: 1 / -1;
+    margin: 5px;
   text-align: center;
   font-weight: bold;
   margin-bottom: 5px;
   font-family: 'Modak', cursive;
   line-height: 1.2;
 }
-@media only screen and (max-width: 768px) {
-    /* Target the specific header element(s) */
-    .tab-title {
-        display: none !important; /* !important helps override existing styles */
-    }
-}
+
+
 
 
 /* ===== Inventory Grid & Items ===== */
@@ -108,6 +105,7 @@ body, html, #root {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 10px;
+  
 }
 
 .inventory-item {
@@ -115,7 +113,7 @@ body, html, #root {
   border-radius: 8px;
   padding: 12px;
   text-align: center;
-  background: var(--secondary-bg);
+  background-color: #fff;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -182,6 +180,9 @@ body, html, #root {
   box-sizing: border-box;
   margin-top: 40px; /* optional extra spacing from top */
 }
+
+
+
 
 .modal-input,
 .modal-select-qty {
@@ -306,4 +307,57 @@ body, html, #root {
 .recipe-details {
   margin-top: 15px;
   background-color: var(--secondary-bg);
+}
+/* Force light theme regardless of system dark mode */
+:root {
+  color-scheme: light;
+}
+
+/* Base text + background */
+html, body, #root {
+  
+  color: #111111;
+}
+
+/* Inputs */
+input, select, textarea {
+  background: #ffffff;
+  color: #111111;
+  border-color: #ccc;
+}
+
+/* MUI paper components (tables, menus, modals) */
+.MuiPaper-root {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+}
+
+/* Menu dropdown */
+.MuiMenu-paper {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+}
+
+/* Table cells */
+.MuiTableCell-root {
+  color: #111111 !important;
+}
+
+/* Fix autofill turning dark */
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px white inset;
+  -webkit-text-fill-color: #111111;
+}
+
+/* Prevent iOS dark mode tinting */
+@media (prefers-color-scheme: dark) {
+  html, body {
+    background: #ffffff;
+    color: #111111;
+  }
+}
+
+
+.MuiBottomNavigationAction-root.Mui-focusVisible {
+  outline: none;
 }
